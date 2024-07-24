@@ -23,5 +23,8 @@ TARGET_KERNEL_CONFIG += vendor/xiaomi/pipa.config
 # Properties
 TARGET_VENDOR_PROP += $(DEVICE_PATH)/vendor.prop
 
+# Wi-Fi
+SOONG_CONFIG_XIAOMI_KONA_WIFI_SYMLINK_VERSION := v2
+
 # Inherit from the proprietary version
 include vendor/xiaomi/pipa/BoardConfigVendor.mk
