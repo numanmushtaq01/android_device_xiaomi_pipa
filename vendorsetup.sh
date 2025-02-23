@@ -21,9 +21,7 @@ clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_sm8250-com
 clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_pipa" "vic" "vendor/xiaomi/pipa"
 clone_if_missing "https://github.com/ai94iq/android_hardware_xiaomi" "vic" "hardware/xiaomi"
 
-# Git cherry-pick with commit check
-cd bootable/recovery ; git fetch https://gerrit.libremobileos.com/LMODroid/platform_bootable_recovery refs/changes/35/11735/1 && git cherry-pick FETCH_HEAD ; git cherry-pick --abort ; cd ../..
-# Git cherry-pick with commit check
+# Git cherry-pick with enhanced error handling
 (
     # Enter recovery directory
     cd bootable/recovery || {
@@ -44,9 +42,16 @@ cd bootable/recovery ; git fetch https://gerrit.libremobileos.com/LMODroid/platf
         echo "Commit already present, skipping cherry-pick"
     else
         echo "Cherry-picking commit..."
-        if ! git cherry-pick FETCH_HEAD; then
-            echo "Cherry-pick failed, cleaning up..."
-            git cherry-pick --abort
+        if git cherry-pick FETCH_HEAD; then
+            echo "Cherry-pick successful"
+        else
+            if git diff --check; then
+                echo "Empty cherry-pick detected, committing..."
+                git commit --allow-empty -C FETCH_HEAD
+            else
+                echo "Cherry-pick failed with conflicts, cleaning up..."
+                git cherry-pick --abort
+            fi
         fi
     fi
 
