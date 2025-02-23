@@ -21,40 +21,34 @@ clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_sm8250-com
 clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_pipa" "vic" "vendor/xiaomi/pipa"
 clone_if_missing "https://github.com/ai94iq/android_hardware_xiaomi" "vic" "hardware/xiaomi"
 
-# Git cherry-pick with enhanced error handling
+# Apply atomic-recovery patch
 (
+    # Store the root directory and device paths
+    ROOT_DIR="$(pwd)"
+    DEVICE_PATH="${ROOT_DIR}/device/xiaomi/pipa"
+    PATCH_PATH="${DEVICE_PATH}/atomic-recovery.diff"
+
+    # Check if patch file exists
+    if [ ! -f "$PATCH_PATH" ]; then
+        echo "Error: Patch file not found at ${PATCH_PATH}"
+        exit 1
+    fi
+
     # Enter recovery directory
     cd bootable/recovery || {
         echo "Error: Could not change to bootable/recovery directory"
         exit 1
     }
 
-    # Fetch the commit
-    echo "Fetching commit from LibreMobileOS..."
-    git fetch https://gerrit.libremobileos.com/LMODroid/platform_bootable_recovery refs/changes/35/11735/1 || {
-        echo "Error: Failed to fetch commit"
-        exit 1
-    }
-
-    # Check if commit is already present
-    COMMIT_ID=$(git rev-parse FETCH_HEAD)
-    if git merge-base --is-ancestor $COMMIT_ID HEAD; then
-        echo "Commit already present, skipping cherry-pick"
+    echo "Applying atomic-recovery patch from ${PATCH_PATH}..."
+    if git am "${PATCH_PATH}"; then
+        echo "Patch applied successfully"
     else
-        echo "Cherry-picking commit..."
-        if git cherry-pick FETCH_HEAD; then
-            echo "Cherry-pick successful"
-        else
-            if git diff --check; then
-                echo "Empty cherry-pick detected, committing..."
-                git commit --allow-empty -C FETCH_HEAD
-            else
-                echo "Cherry-pick failed with conflicts, cleaning up..."
-                git cherry-pick --abort
-            fi
-        fi
+        echo "Patch failed to apply, cleaning up..."
+        git am --abort
+        exit 1
     fi
 
     # Return to original directory
-    cd ../.. || echo "Warning: Failed to return to original directory"
+    cd "${ROOT_DIR}" || echo "Warning: Failed to return to original directory"
 )
