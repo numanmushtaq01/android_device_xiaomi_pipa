@@ -28,10 +28,12 @@ TARGET_SUPPORTS_QUICK_TAP := false
 
 PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
 
+# Axion specific
 AXION_CAMERA_REAR_INFO := 13
 AXION_CAMERA_FRONT_INFO := 8
 AXION_MAINTAINER := Abdulwahab_(ai94iq)
 AXION_PROCESSOR := Qualcomm_Snapdragon_870
+TARGET_PREBUILT_BCR := false
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildFingerprint=Xiaomi/pipa_global/pipa:13/RKQ1.211001.001/V816.0.7.0.UMZMIXM:user/release-keys
