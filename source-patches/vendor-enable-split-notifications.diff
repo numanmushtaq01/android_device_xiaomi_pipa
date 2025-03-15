@@ -1,0 +1,40 @@
+From 583031a436f448e519c3a6fea79ede078242e86e Mon Sep 17 00:00:00 2001
+From: Abdulwahab Isam <abdoi94.iq@gmail.com>
+Date: Sat, 15 Mar 2025 09:27:30 +0300
+Subject: [PATCH] Revert "overlays: Disable split shade for tablets"
+
+This reverts commit decf8b582ae4daedd7e5b6a8f2369a3b48082065.
+---
+ .../res/values-sw600dp-land/config.xml        | 23 -------------------
+ 1 file changed, 23 deletions(-)
+ delete mode 100644 overlay/common/frameworks/base/packages/SystemUI/res/values-sw600dp-land/config.xml
+
+diff --git a/overlay/common/frameworks/base/packages/SystemUI/res/values-sw600dp-land/config.xml b/overlay/common/frameworks/base/packages/SystemUI/res/values-sw600dp-land/config.xml
+deleted file mode 100644
+index 33b6a31319..0000000000
+--- a/overlay/common/frameworks/base/packages/SystemUI/res/values-sw600dp-land/config.xml
++++ /dev/null
+@@ -1,23 +0,0 @@
+-<?xml version="1.0" encoding="utf-8"?>
+-<!--
+-     Copyright (C) 2025 The AxionAOSP Project
+-
+-     Licensed under the Apache License, Version 2.0 (the "License");
+-     you may not use this file except in compliance with the License.
+-     You may obtain a copy of the License at
+-
+-     http://www.apache.org/licenses/LICENSE-2.0
+-
+-     Unless required by applicable law or agreed to in writing, software
+-     distributed under the License is distributed on an "AS IS" BASIS,
+-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-     See the License for the specific language governing permissions and
+-     limitations under the License.
+--->
+-
+-<!-- These resources are around just to allow their values to be customized
+-     for different hardware and product builds. -->
+-<resources>
+-    <!-- Whether to use the split 2-column notification shade -->
+-    <bool name="config_use_split_notification_shade">false</bool>
+-</resources>
