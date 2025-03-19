@@ -15,9 +15,9 @@ clone_if_missing() {
 }
 
 # Git clones
-clone_if_missing "https://github.com/ai94iq/android_device_xiaomi_sm8250-common" "vic" "device/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/ai94iq/android_device_xiaomi_sm8250-common" "axv-qpr2" "device/xiaomi/sm8250-common"
 clone_if_missing "https://github.com/ai94iq/android_kernel_xiaomi_sm8250" "axksu" "kernel/xiaomi/sm8250"
-clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_sm8250-common" "vic" "vendor/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_sm8250-common" "axv-qpr2" "vendor/xiaomi/sm8250-common"
 clone_if_missing "https://github.com/ai94iq/proprietary_vendor_xiaomi_pipa" "axv-qpr2" "vendor/xiaomi/pipa"
 
 # Additional LineageOS repositories
@@ -27,7 +27,7 @@ clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_interfac
 clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_livedisplay" "lineage-22.2" "hardware/lineage/livedisplay"
 
 # Additional 3rd-Party repositories
-clone_if_missing "https://github.com/ai94iq/android_packages_apps_XiaomiDolby" "lineage-22.2" "packages/apps/XiaomiDolby"
+ clone_if_missing "https://github.com/ai94iq/android_packages_apps_XiaomiDolby" "lineage-22.2" "packages/apps/XiaomiDolby"
 
 # Function for applying patches with enhanced handling
 apply_atomic_recovery_patch() {
