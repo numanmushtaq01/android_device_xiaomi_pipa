@@ -39,8 +39,5 @@ TARGET_PREBUILT_BCR := false
 TARGET_INCLUDE_MATLOG := true
 PRODUCT_NO_CAMERA := false
 
-# Build Type
-LINEAGE_BUILDTYPE := IQ
-
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildFingerprint=Xiaomi/pipa_global/pipa:13/RKQ1.211001.001/V816.0.7.0.UMZMIXM:user/release-keys
