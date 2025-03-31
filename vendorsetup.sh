@@ -27,7 +27,7 @@ clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_interfac
 clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_livedisplay" "lineage-22.2" "hardware/lineage/livedisplay"
 
 # Additional 3rd-Party repositories
- clone_if_missing "https://github.com/ai94iq/android_packages_apps_XiaomiDolby" "lineage-22.2" "packages/apps/XiaomiDolby"
+clone_if_missing "https://github.com/ai94iq/android_packages_apps_XiaomiDolby" "lineage-22.2" "packages/apps/XiaomiDolby"
 
 # Function for applying patches with enhanced handling
 apply_atomic_recovery_patch() {
@@ -120,40 +120,6 @@ apply_atomic_recovery_patch() {
     return 1
 }
 
-# Function to apply vendor-enable-split-notifications by removing the config file
-apply_split_notifications_fix() {
-    local root_dir=$(pwd)
-    local target_dir="vendor/lineage"
-    local config_file="overlay/common/frameworks/base/packages/SystemUI/res/values-sw600dp-land/config.xml"
-    
-    echo "==== Applying split-notifications fix ===="
-    
-    # Enter target directory
-    echo "Navigating to ${target_dir}..."
-    if ! cd "$target_dir"; then
-        echo "Error: Could not change to $target_dir directory"
-        cd "$root_dir"
-        return 1
-    fi
-    
-    # Check if the file exists and remove it
-    if [ -f "$config_file" ]; then
-        echo "Removing ${config_file}..."
-        rm -f "$config_file"
-        
-        # Commit the changes
-        git add .
-        git commit -m "Removed sw600dp-land config to enable split notifications for tablets"
-        echo "✓ Split-notifications fix applied successfully"
-    else
-        echo "Config file doesn't exist, no changes needed"
-    fi
-    
-    # Return to root directory
-    cd "$root_dir"
-    return 0
-}
-
 # Function to download and extract Mi Pad 6 firmware
 download_and_extract_firmware() {
     local root_dir=$(pwd)
@@ -216,9 +182,6 @@ apply_atomic_recovery_patch
 
 # Make sure we're in the root directory
 cd "$ROOT_DIR"
-
-# Apply split notifications fix (remove config file)
-apply_split_notifications_fix
 
 # Download and extract firmware package
 download_and_extract_firmware
