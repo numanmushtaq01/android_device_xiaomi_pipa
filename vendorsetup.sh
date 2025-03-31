@@ -154,6 +154,45 @@ apply_split_notifications_fix() {
     return 0
 }
 
+# Function to download and extract Mi Pad 6 firmware
+download_and_extract_firmware() {
+    local root_dir=$(pwd)
+    local firmware_url="https://github.com/ai94iq/proprietary_vendor_xiaomi_pipa/releases/download/fw-radio-OS2.0.2.0.UMZMIXM/vendor-pipa-fw-included.zip"
+    local target_dir="${root_dir}/vendor/xiaomi"
+    local temp_zip="/tmp/pipa_firmware.zip"
+    
+    echo "==== Downloading and extracting Mi Pad 6 firmware ===="
+    
+    # Create target directory if it doesn't exist
+    mkdir -p "$target_dir"
+    
+    # Download firmware zip
+    echo "Downloading firmware from GitHub..."
+    if ! curl -L "$firmware_url" -o "$temp_zip"; then
+        echo "Error: Failed to download firmware"
+        return 1
+    fi
+    
+    # Check if download was successful
+    if [ ! -f "$temp_zip" ] || [ ! -s "$temp_zip" ]; then
+        echo "Error: Downloaded firmware file is empty or doesn't exist"
+        return 1
+    fi
+    
+    # Extract firmware to vendor/xiaomi
+    echo "Extracting firmware to ${target_dir}..."
+    if ! unzip -o "$temp_zip" -d "$target_dir"; then
+        echo "Error: Failed to extract firmware"
+        rm -f "$temp_zip"
+        return 1
+    fi
+    
+    # Clean up
+    rm -f "$temp_zip"
+    echo "✓ Firmware successfully downloaded and extracted"
+    return 0
+}
+
 # Main script execution starts here
 ROOT_DIR=$(pwd)
 DEVICE_PATH="${ROOT_DIR}/device/xiaomi/pipa"
@@ -180,6 +219,9 @@ cd "$ROOT_DIR"
 
 # Apply split notifications fix (remove config file)
 apply_split_notifications_fix
+
+# Download and extract firmware package
+download_and_extract_firmware
 
 # Make sure we're in the root directory
 cd "$ROOT_DIR"
