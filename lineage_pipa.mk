@@ -36,8 +36,9 @@ AXION_CPU_BIG_CORES := 4,5,6,7
 AXION_MAINTAINER := Abdulwahab_(ai94iq)
 AXION_PROCESSOR := Qualcomm_Snapdragon_870
 TARGET_PREBUILT_BCR := false
-TARGET_INCLUDE_MATLOG := true
 PRODUCT_NO_CAMERA := false
+TARGET_INCLUDE_MATLOG := true
+TARGET_INCLUDES_LOS_PREBUILTS := true
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildFingerprint=Xiaomi/pipa_global/pipa:13/RKQ1.211001.001/V816.0.7.0.UMZMIXM:user/release-keys
