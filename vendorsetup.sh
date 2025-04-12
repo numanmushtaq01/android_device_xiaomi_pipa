@@ -84,7 +84,7 @@ apply_recovery_patch() {
 # Download and extract firmware
 setup_firmware() {
     local root_dir=$(pwd)
-    local firmware_url="https://github.com/ai94iq/proprietary_vendor_xiaomi_pipa/releases/download/fw-radio-OS2.0.2.0.UMZMIXM/vendor-pipa-fw-included.zip"
+    local firmware_url="https://github.com/ai94iq/proprietary_vendor_xiaomi_pipa/releases/download/fw-radio-OS2.0.3.0.UMZMIXM/vendor-pipa-fw-included.zip"
     local target_dir="${root_dir}/vendor/xiaomi"
     local temp_zip="/tmp/pipa_firmware.zip"
     local radio_dir="${target_dir}/pipa/radio"
