@@ -21,8 +21,6 @@ The **Xiaomi Pad 6** (codename **"pipa"**) is a premium mid-range tablet from Xi
 | **Fingerprint**      | No                                                        |
 | **Sensors**          | Accelerometer, Gyroscope, Proximity (via software), Compass |
 
-## 🖼️ Device picture
 
-![Xiaomi Pad 6](https://www.nextbuying.com/media/catalog/product/cache/20c6953b0706163297cf478a9d7d460d/p/0/p000884-01_1.jpg)
 
 > Copyright (C) 2023 Xiaomi. Used here for informational purposes only.
