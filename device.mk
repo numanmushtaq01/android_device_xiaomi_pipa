@@ -23,6 +23,9 @@ TARGET_SCREEN_HEIGHT := 2880
 TARGET_SCREEN_WIDTH := 1800
 TARGET_BOOT_ANIMATION_RES := 1080
 
+#set boot animation orientation
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += ro.bootanim.set_orientation_logical_0=ORIENTATION_270
+
 # Camera
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/camera/camera_cnf.txt:$(TARGET_COPY_OUT_VENDOR)/etc/camera/camera_cnf.txt
