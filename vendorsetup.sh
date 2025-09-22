@@ -214,6 +214,37 @@ apply_recovery_patch || { echo "Recovery patch application failed."; exit 1; }
 # Setup firmware
 setup_firmware || { echo "Firmware setup failed."; exit 1; }
 
+# ──────────────────────────────────────────────────────────────
+# Apply FWB Patch (Tablet, Local)
+# ──────────────────────────────────────────────────────────────
+apply_fwb_patch() {
+    local root_dir
+    root_dir=$(pwd)
+    local target_dir="frameworks/base"
+    local patch_file="$root_dir/device/xiaomi/pipa/patches/tablet-fwb.patch"
+
+    info "Applying Tablet FWB patch from local repo..."
+
+    if [ ! -f "$patch_file" ]; then
+        error "Patch file not found: $patch_file"
+        return 1
+    fi
+
+    if ! cd "$target_dir"; then
+        error "Could not enter $target_dir to apply patch."
+        return 1
+    fi
+
+    if git apply --check --ignore-whitespace "$patch_file" >/dev/null 2>&1; then
+        git apply --ignore-whitespace "$patch_file"
+        success "Tablet FWB patch applied successfully."
+    else
+        warn "Tablet FWB patch could not be applied (may already be applied or conflict)."
+    fi
+
+    cd "$root_dir"
+}
+
 echo "-------------------------------------"
 echo "           Setup complete!           "
 echo "-------------------------------------"
