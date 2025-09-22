@@ -1,218 +1,229 @@
 #!/bin/bash
 
-# Exit immediately if a command exits with a non-zero status.
-set -e
+# ──────────────────────────────────────────────────────────────
+# Terminal Colors
+# ──────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m'
 
-# Function to clone if directory doesn't exist
+info()    { echo -e "${BLUE}${BOLD}→${NC} ${BLUE}$1${NC}"; }
+success() { echo -e "${GREEN}${BOLD}✔${NC} ${GREEN}$1${NC}"; }
+warn()    { echo -e "${YELLOW}${BOLD}!${NC} ${YELLOW}$1${NC}"; }
+error()   { echo -e "${RED}${BOLD}✖${NC} ${RED}$1${NC}"; }
+divider() { echo -e "${BOLD}──────────────────────────────────────────────${NC}"; }
+
+# ──────────────────────────────────────────────────────────────
+# clone_if_missing + clean_clone
+# ──────────────────────────────────────────────────────────────
 clone_if_missing() {
-    local repo_url=$1
-    local branch=$2
-    local target_dir=$3
-    
-    if [ -z "$repo_url" ] || [ -z "$branch" ] || [ -z "$target_dir" ]; then
-        echo "Usage: clone_if_missing <repo_url> <branch> <target_dir>"
+    local repo_url=$1 branch=$2 target_dir=$3
+    [ -z "$repo_url" ] || [ -z "$branch" ] || [ -z "$target_dir" ] && {
+        error "Usage: clone_if_missing <repo_url> <branch> <target_dir>"
         return 1
-    fi
+    }
 
     if [ ! -d "$target_dir" ]; then
-        echo "Cloning $target_dir..."
-        git clone "$repo_url" -b "$branch" "$target_dir" -q || { echo "Error: Failed to clone $repo_url."; return 1; }
-        echo "Done."
-    else
-        echo "Directory $target_dir already exists, skipping clone."
-    fi
-    return 0
-}
-
-# Function to perform a clean clone (removes existing directory first)
-clean_clone() {
-    local repo_url=$1
-    local branch=$2
-    local target_dir=$3
-
-    # Validate inputs
-    if [ -z "$repo_url" ] || [ -z "$branch" ] || [ -z "$target_dir" ]; then
-        echo "Usage: clean_clone <repo_url> <branch> <target_dir>"
-        return 1 # Indicate an error
-    fi
-
-    echo "Attempting to clean clone $repo_url (branch: $branch) into $target_dir..."
-
-    # Step 1: Remove existing directory if it exists
-    if [ -d "$target_dir" ]; then
-        echo "Removing existing directory: $target_dir"
-        rm -rf "$target_dir" || { echo "Error: Failed to remove existing directory $target_dir. Aborting." ; return 1; }
-        echo "Existing directory removed."
-    fi
-
-    # Step 2: Perform the clone
-    echo "Cloning $repo_url..."
-    git clone "$repo_url" -b "$branch" "$target_dir" -q
-    if [ $? -eq 0 ]; then
-        echo "Clean clone complete for $target_dir."
-        return 0 # Success
-    else
-        echo "Error: Failed to clone $repo_url (branch: $branch) into $target_dir."
-        return 1 # Failure
-    fi
-}
-
-
-# Git clones (using clone_if_missing by default, as it's generally safer for initial setup)
-echo "Setting up repositories..."
-clone_if_missing "https://github.com/glitch-wraith/android_device_xiaomi_sm8250-common" "15-qpr2" "device/xiaomi/sm8250-common"
-clone_if_missing "https://github.com/glitch-wraith/android_kernel_xiaomi_sm8250" "axksu" "kernel/xiaomi/sm8250"
-clone_if_missing "https://github.com/glitch-wraith/proprietary_vendor_xiaomi_sm8250-common" "15" "vendor/xiaomi/sm8250-common"
-clone_if_missing "https://github.com/glitch-wraith/proprietary_vendor_xiaomi_pipa" "15" "vendor/xiaomi/pipa"
-
-# Additional repos
-clone_if_missing "https://github.com/LineageOS/android_hardware_xiaomi" "lineage-22.2" "hardware/xiaomi"
-clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_compat" "lineage-22.2" "hardware/lineage/compat"
-clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_interfaces" "lineage-22.2" "hardware/lineage/interfaces"
-clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_livedisplay" "lineage-22.2" "hardware/lineage/livedisplay"
-clone_if_missing "https://github.com/Matrixx-Devices/hardware_dolby.git" "sony-1.3" "hardware/dolby"
-
-# Apply recovery patch
-apply_recovery_patch() {
-    local root_dir=$(pwd)
-    local target_dir="bootable/recovery"
-    local patch_path="${root_dir}/device/xiaomi/pipa/source-patches/atomic-recovery.diff"
-    local temp_patch="/tmp/atomic-recovery.patch" # Use a temp file for safety
-
-    echo "Applying recovery patch..."
-    
-    if [ ! -f "$patch_path" ]; then
-        echo "Error: Patch file not found: ${patch_path}"
-        return 1
-    fi
-    
-    # Change to target directory for patch application
-    cd "$target_dir" || { echo "Error: Cannot CD into $target_dir. Aborting patch." ; return 1; }
-
-    # --- Patch Check Logic ---
-    local patch_marker_message="Applied recovery patch"
-    local already_patched=false
-
-    # Create a temporary patch file with corrected line endings for checks and application
-    tr -d '\r' < "$patch_path" > "$temp_patch" || { echo "Error: Failed to process patch file line endings." ; cd "$root_dir" ; return 1; }
-    
-    # 1. Check if the specific commit message exists in the history
-    if git log --grep="$patch_marker_message" -n 1 --pretty=format:"%s" &>/dev/null; then
-        already_patched=true
-        echo "Detected commit '$patch_marker_message' in $target_dir history."
-    fi
-
-    # 2. Check if the patch can be reversed (implying it's currently applied)
-    # This is useful even if the commit message isn't found, e.g., if applied manually.
-    if ! $already_patched && git apply --check --reverse --ignore-whitespace "$temp_patch" &>/dev/null; then
-        already_patched=true
-        echo "Patch file appears to be applied (reverse check successful)."
-    fi
-
-    if $already_patched; then
-        read -p "Recovery patch already appears to be applied. Skip re-application? (y/N): " choice
-        case "$choice" in
-            [yY]|[yY][eE][sS])
-                echo "Skipping recovery patch application."
-                rm -f "$temp_patch" # Clean up temp patch
-                cd "$root_dir"
-                return 0
-                ;;
-            *)
-                echo "Proceeding with patch application (will attempt to re-apply/update)."
-                ;;
-        esac
-    fi
-    # --- End Patch Check Logic ---
-
-    echo "Attempting to apply patch..."
-    # Try different patch methods (git am is usually best for well-formed patches)
-    if git am --3way "$temp_patch"; then
-        echo "Patch applied successfully with git am."
-    elif git apply --check --ignore-whitespace "$temp_patch" && git apply --ignore-whitespace "$temp_patch"; then
-        git add .
-        git commit -m "$patch_marker_message" -q || true # Commit, ignore if no changes were actually made
-        echo "Patch applied successfully with git apply and committed."
-    else
-        echo "Warning: git am and git apply failed. Attempting with standard patch command..."
-        # Try standard patch with different strip levels
-        for level in 1 0 2; do
-            if patch -p${level} --ignore-whitespace --no-backup-if-mismatch < "$temp_patch"; then
-                git add . || true
-                git commit -m "$patch_marker_message (via patch -p$level)" -q || true
-                echo "Patch applied successfully with patch -p$level."
-                break
-            fi
-        done
-        
-        # If still failed, or partially applied
-        if ! git diff --name-only | grep -q .; then # No changes in working tree means it completely failed or already applied
-            echo "Failed to apply patch using any method, or no changes were necessary."
-            git reset --hard HEAD >/dev/null 2>&1 || true # Clean up working dir in case of partial application
-            rm -f "$temp_patch"
-            cd "$root_dir"
+        info "Cloning $target_dir..."
+        git clone "$repo_url" -b "$branch" "$target_dir" -q \
+            && success "Done cloning $target_dir." || {
+            error "Failed to clone $repo_url."
             return 1
-        else
-            git add . || true
-            git commit -m "$patch_marker_message (partial/manual)" -q || true
-            echo "Patch partially applied or required manual intervention. Please review."
-        fi
+        }
+    else
+        warn "$target_dir already exists, skipping."
     fi
-    
-    rm -f "$temp_patch" # Clean up temp patch
-    cd "$root_dir"
     return 0
 }
 
-# Download and extract firmware
-setup_firmware() {
-    local root_dir=$(pwd)
-    local firmware_url="https://github.com/glitch-wraith/vendor_xiaomi_pipa/releases/download/fw-radio-OS2.0.3.0.UMZMIXM/vendor-pipa-fw-included.zip"
-    local target_dir="${root_dir}/vendor/xiaomi"
-    local temp_zip=$(mktemp /tmp/pipa_firmware_XXXXXX.zip) # Use mktemp for unique temp file
-    local radio_dir="${target_dir}/pipa/radio"
-    
-    # Check if firmware already exists by checking key files
-    if [ -d "$radio_dir" ] && [ -f "${radio_dir}/abl.img" ] && [ -f "${radio_dir}/xbl.img" ]; then
-        echo "Firmware already present, skipping download."
-        return 0
+clean_clone() {
+    local repo_url=$1 branch=$2 target_dir=$3
+    [ -z "$repo_url" ] || [ -z "$branch" ] || [ -z "$target_dir" ] && {
+        error "Usage: clean_clone <repo_url> <branch> <target_dir>"
+        return 1
+    }
+
+    info "Fresh cloning $target_dir from $branch..."
+    [ -d "$target_dir" ] && rm -rf "$target_dir" && success "Removed $target_dir."
+    git clone "$repo_url" -b "$branch" "$target_dir" -q && \
+        success "Cloned $target_dir." || {
+        error "Clone failed."
+        return 1
+    }
+    return 0
+}
+
+# ──────────────────────────────────────────────────────────────
+# Kernel Repo (fixed to Normal Perf)
+# ──────────────────────────────────────────────────────────────
+divider
+info "Cloning kernel into kernel/xiaomi/sm8250..."
+clone_if_missing "https://github.com/numanmushtaq01/android_kernel_xiaomi_sm8250" "axksu" "kernel/xiaomi/sm8250"
+divider
+
+# ──────────────────────────────────────────────────────────────
+# Other Repos
+# ──────────────────────────────────────────────────────────────
+info "Setting up other repositories..."
+clone_if_missing "https://github.com/numanmushtaq01/android_device_xiaomi_sm8250-common" "16" "device/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_sm8250-common" "16" "vendor/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_pipa" "16" "vendor/xiaomi/pipa"
+clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_compat" "lineage-23.0" "hardware/lineage/compat"
+clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_interfaces" "lineage-23.0" "hardware/lineage/interfaces"
+clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_livedisplay" "lineage-23.0" "hardware/lineage/livedisplay"
+clone_if_missing "https://github.com/PocoF3Releases/device_qcom_wfd.git" "bka" "device/qcom/wfd"
+clone_if_missing "https://github.com/PocoF3Releases/vendor_qcom_wfd.git" "bka" "vendor/qcom/wfd"
+clean_clone "https://github.com/gensis01/hardware_xiaomi.git"  "aosp-16" "hardware/xiaomi"
+clean_clone "https://github.com/PocoF3Releases/packages_resources_devicesettings.git" "aosp-16" "packages/resources/devicesettings"
+divider
+
+# ──────────────────────────────────────────────────────────────
+# Apply Recovery Patch (non-fatal warning only)
+# ──────────────────────────────────────────────────────────────
+apply_recovery_patch() {
+    local root_dir
+    root_dir=$(pwd)
+    local target_dir="bootable/recovery"
+    local patch_file="$root_dir/device/xiaomi/pipa/source-patches/atomic-recovery.diff"
+    local temp_patch="/tmp/atomic-recovery.patch"
+
+    info "Attempting to apply recovery patch..."
+
+    if [ ! -f "$patch_file" ]; then
+        warn "Patch file not found, skipping: $patch_file"
+        return
+    fi
+
+    if ! cd "$target_dir"; then
+        warn "Could not enter $target_dir, skipping patch."
+        return
     fi
     
-    echo "Downloading firmware from $firmware_url..."
-    mkdir -p "$target_dir" || { echo "Error: Failed to create firmware target directory."; return 1; }
-    
-    curl -sL "$firmware_url" -o "$temp_zip"
-    if [ ! -s "$temp_zip" ]; then # Check if file exists and is not empty
-        echo "Error: Failed to download firmware from $firmware_url"
-        rm -f "$temp_zip"
+    tr -d '\r' < "$patch_file" > "$temp_patch"
+
+    local patch_fingerprint
+    patch_fingerprint=$(sha1sum "$temp_patch" | awk '{print $1}')
+    if git log -1 --pretty=%B | grep -q "$patch_fingerprint"; then
+        warn "Recovery patch seems to be already applied. Skipping."
+        rm -f "$temp_patch"
+        cd "$root_dir"
+        return
+    fi
+
+    if git apply --check --ignore-whitespace "$temp_patch" >/dev/null 2>&1; then
+        git apply --ignore-whitespace "$temp_patch"
+        git add .
+        git commit -m "Apply recovery patch: $patch_fingerprint" -q
+        success "Recovery patch applied successfully."
+    else
+        warn "White recovery patch is skipped, may cause problems in recovery."
+    fi
+
+    rm -f "$temp_patch"
+    cd "$root_dir"
+}
+
+# ──────────────────────────────────────────────────────────────
+# Setup firmware
+# ──────────────────────────────────────────────────────────────
+setup_firmware() {
+    local root_dir
+    root_dir=$(pwd)
+    local target_dir="${root_dir}/vendor/xiaomi/pipa"
+    local firmware_url="https://github.com/sheoranpranshu/proprietary_vendor_xiaomi_pipa/releases/download/fw-radio-OS2.0.10.0.UMZCNXM-pipa/OS2.0.10.0.UMZCNXM-pipa.zip"
+    local tmp_zip="/tmp/OS2.0.10.0.UMZCNXM-pipa.zip"
+    local tmp_extract="/tmp/firmware_extract"
+
+    info "Setting up firmware..."
+
+    mkdir -p "$target_dir" || {
+        error "Failed to create target directory: $target_dir"
+        return 1
+    }
+
+    if [ -d "$target_dir/radio" ]; then
+        warn "Removing existing radio folder..."
+        rm -rf "$target_dir/radio" || {
+            error "Failed to remove existing $target_dir/radio"
+            return 1
+        }
+    fi
+
+    if command -v curl >/dev/null 2>&1; then
+        info "Downloading firmware (curl)..."
+        curl -L --fail -o "$tmp_zip" "$firmware_url" || {
+            error "Failed to download firmware with curl."
+            [ -f "$tmp_zip" ] && rm -f "$tmp_zip"
+            return 1
+        }
+    elif command -v wget >/dev/null 2>&1; then
+        info "Downloading firmware (wget)..."
+        wget -q -O "$tmp_zip" "$firmware_url" || {
+            error "Failed to download firmware with wget."
+            [ -f "$tmp_zip" ] && rm -f "$tmp_zip"
+            return 1
+        }
+    else
+        error "Neither curl nor wget found. Cannot download firmware."
         return 1
     fi
-    
-    echo "Extracting firmware to $target_dir..."
-    unzip -qo "$temp_zip" -d "$target_dir" || { echo "Error: Failed to extract firmware."; rm -f "$temp_zip"; return 1; }
-    rm -f "$temp_zip"
-    echo "Firmware setup complete."
-    return 0
+
+    rm -rf "$tmp_extract"
+    mkdir -p "$tmp_extract" || {
+        error "Failed to create temp extract dir: $tmp_extract"
+        rm -f "$tmp_zip"
+        return 1
+    }
+
+    if command -v unzip >/dev/null 2>&1; then
+        info "Extracting firmware into temporary location..."
+        unzip -q -o "$tmp_zip" -d "$tmp_extract" || {
+            error "Extraction failed with unzip."
+            rm -f "$tmp_zip"
+            rm -rf "$tmp_extract"
+            return 1
+        }
+    elif command -v bsdtar >/dev/null 2>&1; then
+        info "Extracting firmware with bsdtar..."
+        bsdtar -xf "$tmp_zip" -C "$tmp_extract" || {
+            error "Extraction failed with bsdtar."
+            rm -f "$tmp_zip"
+            rm -rf "$tmp_extract"
+            return 1
+        }
+    else
+        error "No extractor (unzip or bsdtar) available."
+        rm -f "$tmp_zip"
+        rm -rf "$tmp_extract"
+        return 1
+    fi
+
+    local radio_dir
+    radio_dir=$(find "$tmp_extract" -type d -name radio -print -quit)
+
+    if [ -z "$radio_dir" ]; then
+        error "No 'radio' directory found inside the extracted firmware."
+        rm -f "$tmp_zip"
+        rm -rf "$tmp_extract"
+        return 1
+    fi
+
+    info "Moving radio directory into $target_dir..."
+    mv "$radio_dir" "$target_dir"/ || {
+        error "Failed to move radio directory to $target_dir"
+        rm -f "$tmp_zip"
+        rm -rf "$tmp_extract"
+        return 1
+    }
+
+    rm -f "$tmp_zip"
+    rm -rf "$tmp_extract"
+
+    success "Firmware setup complete: moved 'radio' directory to $target_dir/radio"
 }
-
-# Main script execution
-ROOT_DIR=$(pwd)
-DEVICE_PATH="${ROOT_DIR}/device/xiaomi/pipa"
-
-# Check if device directory exists (after initial clones)
-if [ ! -d "$DEVICE_PATH" ]; then
-    echo "Error: Device directory 'device/xiaomi/pipa' not found. Please ensure repositories are properly cloned."
-    exit 1
-fi
-
-# Create patches directory if it doesn't exist
-mkdir -p "${DEVICE_PATH}/source-patches" || { echo "Error: Failed to create source-patches directory."; exit 1; }
-
-# Apply patches
-apply_recovery_patch || { echo "Recovery patch application failed."; exit 1; }
-
-# Setup firmware
-setup_firmware || { echo "Firmware setup failed."; exit 1; }
 
 # ──────────────────────────────────────────────────────────────
 # Apply FWB Patch (Tablet, Local)
@@ -244,6 +255,17 @@ apply_fwb_patch() {
 
     cd "$root_dir"
 }
+
+# ──────────────────────────────────────────────────────────────
+# Run Patch Setup
+# ──────────────────────────────────────────────────────────────
+ROOT_DIR=$(pwd)
+DEVICE_PATH="${ROOT_DIR}/device/xiaomi/pipa"
+mkdir -p "$DEVICE_PATH/source-patches"
+
+apply_recovery_patch
+setup_firmware
+apply_fwb_patch
 
 echo "-------------------------------------"
 echo "           Setup complete!           "
