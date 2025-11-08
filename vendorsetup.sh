@@ -68,9 +68,9 @@ divider
 # Other Repos
 # ──────────────────────────────────────────────────────────────
 info "Setting up other repositories..."
-clone_if_missing "https://github.com/numanmushtaq01/android_device_xiaomi_sm8250-common" "16" "device/xiaomi/sm8250-common"
-clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_sm8250-common" "16" "vendor/xiaomi/sm8250-common"
-clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_pipa" "16" "vendor/xiaomi/pipa"
+clone_if_missing "https://github.com/numanmushtaq01/android_device_xiaomi_sm8250-common" "16.0" "device/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_sm8250-common" "aosp-16" "vendor/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_pipa" "bka" "vendor/xiaomi/pipa"
 clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_compat" "lineage-23.0" "hardware/lineage/compat"
 clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_interfaces" "lineage-23.0" "hardware/lineage/interfaces"
 clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_livedisplay" "lineage-23.0" "hardware/lineage/livedisplay"
