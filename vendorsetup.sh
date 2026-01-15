@@ -61,19 +61,16 @@ clean_clone() {
 # ──────────────────────────────────────────────────────────────
 divider
 info "Cloning kernel into kernel/xiaomi/sm8250..."
-clone_if_missing "https://github.com/numanmushtaq01/android_kernel_xiaomi_sm8250" "axksu" "kernel/xiaomi/sm8250"
+clone_if_missing "https://github.com/numanmushtaq01/android_kernel_xiaomi_sm8250" "16" "kernel/xiaomi/sm8250"
 divider
 
 # ──────────────────────────────────────────────────────────────
 # Other Repos
 # ──────────────────────────────────────────────────────────────
 info "Setting up other repositories..."
-clone_if_missing "https://github.com/numanmushtaq01/android_device_xiaomi_sm8250-common" "16.0" "device/xiaomi/sm8250-common"
+clone_if_missing "https://github.com/numanmushtaq01/android_device_xiaomi_sm8250-common" "16" "device/xiaomi/sm8250-common"
 clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_sm8250-common" "aosp-16" "vendor/xiaomi/sm8250-common"
 clone_if_missing "https://github.com/numanmushtaq01/vendor_xiaomi_pipa" "bka" "vendor/xiaomi/pipa"
-clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_compat" "lineage-23.0" "hardware/lineage/compat"
-clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_interfaces" "lineage-23.0" "hardware/lineage/interfaces"
-clone_if_missing "https://github.com/LineageOS/android_hardware_lineage_livedisplay" "lineage-23.0" "hardware/lineage/livedisplay"
 clone_if_missing "https://github.com/PocoF3Releases/device_qcom_wfd.git" "bka" "device/qcom/wfd"
 clone_if_missing "https://github.com/PocoF3Releases/vendor_qcom_wfd.git" "bka" "vendor/qcom/wfd"
 clean_clone "https://github.com/gensis01/hardware_xiaomi.git"  "aosp-16" "hardware/xiaomi"
@@ -133,7 +130,7 @@ setup_firmware() {
     local root_dir
     root_dir=$(pwd)
     local target_dir="${root_dir}/vendor/xiaomi/pipa"
-    local firmware_url="https://github.com/numanmushtaq01/vendor_xiaomi_pipa/vendor_xiaomi_pipa/releases/download/pipa-2/pipa-2.0.12.0-MI.zip"
+    local firmware_url="https://github.com/Xiaomi-Pad6/vendor_xiaomi_pipa/releases/download/pipa-2/pipa-2.0.12.0-MI.zip"
     local tmp_zip="/tmp/pipa-2.0.12.0-MI.zip"
     local tmp_extract="/tmp/firmware_extract"
 
@@ -225,47 +222,60 @@ setup_firmware() {
     success "Firmware setup complete: moved 'radio' directory to $target_dir/radio"
 }
 
-# ──────────────────────────────────────────────────────────────
-# Apply FWB Patch (Tablet, Local)
-# ──────────────────────────────────────────────────────────────
-apply_fwb_patch() {
-    local root_dir
-    root_dir=$(pwd)
-    local target_dir="frameworks/base"
-    local patch_file="$root_dir/device/xiaomi/pipa/patches/tablet-fwb.patch"
+apply_patch() {
+    local name=$1
+    local patch_path=$2
+    local target_dir=$3
+    local tmp_patch="/tmp/temp_patch.$$"
 
-    info "Applying Tablet FWB patch from local repo..."
+    info "Processing patch: ${BOLD}$name${NC}..."
 
-    if [ ! -f "$patch_file" ]; then
-        error "Patch file not found: $patch_file"
+    if [ ! -f "$patch_path" ]; then
+        error "Patch file not found: $patch_path"
         return 1
     fi
 
-    if ! cd "$target_dir"; then
-        error "Could not enter $target_dir to apply patch."
-        return 1
-    fi
+    local current_dir=$(pwd)
+    cd "$target_dir" || { error "Could not enter $target_dir"; return 1; }
 
-    if git apply --check --ignore-whitespace "$patch_file" >/dev/null 2>&1; then
-        git apply --ignore-whitespace "$patch_file"
-        success "Tablet FWB patch applied successfully."
+    # Clean CRLF (Windows) line endings
+    tr -d '\r' < "$patch_path" > "$tmp_patch"
+
+    if git apply --check "$tmp_patch" >/dev/null 2>&1; then
+        if git apply "$tmp_patch" >/dev/null 2>&1; then
+            git add .
+            git commit -m "Apply $name" -q || true
+            success "$name applied and committed successfully."
+        else
+            warn "Failed to apply $name cleanly. Resetting..."
+            git reset --hard HEAD >/dev/null 2>&1
+            git clean -fd >/dev/null 2>&1
+        fi
     else
-        warn "Tablet FWB patch could not be applied (may already be applied or conflict)."
+        warn "$name seems to be already applied or has conflicts."
     fi
 
-    cd "$root_dir"
+    rm -f "$tmp_patch"
+    cd "$current_dir" || return
 }
 
+echo -e "\n${BOLD}>>> 2. APPLYING PATCHES${NC}"
+DEVICE_PATH="device/xiaomi/pipa"
+mkdir -p "$DEVICE_PATH/patches"
+
+apply_patch "Tablet FWB Patch" "$ROOT_DIR/$DEVICE_PATH/patches/tablet-fwb.patch" "frameworks/base"
+
+
+# ──────────────────────────────────────────────────────────────
 # ──────────────────────────────────────────────────────────────
 # Run Patch Setup
 # ──────────────────────────────────────────────────────────────
 ROOT_DIR=$(pwd)
 DEVICE_PATH="${ROOT_DIR}/device/xiaomi/pipa"
-mkdir -p "$DEVICE_PATH/source-patches"
+mkdir -p "$DEVICE_PATH/patches"
 
-apply_recovery_patch
+apply_tablet_patch
 setup_firmware
-apply_fwb_patch
 
 echo "-------------------------------------"
 echo "           Setup complete!           "
