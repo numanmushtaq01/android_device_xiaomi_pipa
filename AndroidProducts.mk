@@ -5,4 +5,4 @@
 #
 
 PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/voltage_pipa.mk
+    $(LOCAL_DIR)/clover_pipa.mk
